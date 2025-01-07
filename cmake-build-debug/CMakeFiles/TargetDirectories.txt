@@ -1,3 +1,0 @@
-C:/Users/Nathan/CLionProjects/VectorizationPractice/cmake-build-debug/CMakeFiles/VectorizationPractice.dir
-C:/Users/Nathan/CLionProjects/VectorizationPractice/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/Nathan/CLionProjects/VectorizationPractice/cmake-build-debug/CMakeFiles/rebuild_cache.dir

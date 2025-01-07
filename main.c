@@ -3,11 +3,17 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define SIZE 1<<16
 
 typedef struct {
     float x;
     float y;
 } Vec2;
+
+typedef struct {
+    float x[];
+    float y[];
+} Vec2SOA;
 
 void VectorizedSumOfSquares(const float *A, const float *B, float *results, int size) {
     int i;
@@ -33,6 +39,7 @@ void SumOfSquares(const float *A, const float *B, float *results, int size) {
     }
 }
 
+//Array of structs version
 void VectorizedRotate(Vec2 *offsets, size_t size) {
     size_t i;
     for (i = 0; i + 8 <= size; i += 8) {
@@ -49,8 +56,24 @@ void VectorizedRotate(Vec2 *offsets, size_t size) {
     }
 }
 
+//Struct of Array Version
+void VectorizedRotate(Vec2SOA *vectors, size_t size) {
+    size_t i;
+    for (i = 0; i + 8 <= size; i += 8) {
+        __m256 vectorX = _mm256_loadu_ps(&vectors->x[i]);
+        __m256 vectorY = _mm256_loadu_ps(&vectors->y[i]);
+        __m256 temp = vectorX;
+
+        __m256 mask = _mm256_set1_ps(-0.0f);
+
+        vectorX = vectorY;
+        vectorY = _mm256_xor_ps(temp, mask);
+        _mm256_storeu_ps(&vectors->x[i], vectorX);
+        _mm256_storeu_ps(&vectors->y[i], vectorY);
+    }
+}
+
 int main() {
-    const int SIZE = 8;
     float A[] __attribute__((aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
     float B[] __attribute__((aligned(32))) = {8, 9, 11, 12, 13, 14, 15, 16};
     float result[SIZE];
@@ -66,7 +89,7 @@ int main() {
         printf("%f ", result[i]);
     }
 
-    Vec2 * offsets[SIZE];
+    Vec2 *offsets[SIZE];
 
 
     return 0;

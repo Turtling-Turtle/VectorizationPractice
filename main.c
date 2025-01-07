@@ -11,8 +11,8 @@ typedef struct {
 } Vec2;
 
 typedef struct {
-    float x[];
-    float y[];
+    float x[SIZE];
+    float y[SIZE];
 } Vec2SOA;
 
 void VectorizedSumOfSquares(const float *A, const float *B, float *results, int size) {
@@ -57,19 +57,19 @@ void VectorizedRotate(Vec2 *offsets, size_t size) {
 }
 
 //Struct of Array Version
-void VectorizedRotate(Vec2SOA *vectors, size_t size) {
+void VectorizedRotateSOA(Vec2SOA *vectors, size_t size) {
     size_t i;
     for (i = 0; i + 8 <= size; i += 8) {
-        __m256 vectorX = _mm256_loadu_ps(&vectors->x[i]);
-        __m256 vectorY = _mm256_loadu_ps(&vectors->y[i]);
+        __m256 vectorX = _mm256_load_ps(&vectors->x[i]);
+        __m256 vectorY = _mm256_load_ps(&vectors->y[i]);
         __m256 temp = vectorX;
 
         __m256 mask = _mm256_set1_ps(-0.0f);
 
         vectorX = vectorY;
         vectorY = _mm256_xor_ps(temp, mask);
-        _mm256_storeu_ps(&vectors->x[i], vectorX);
-        _mm256_storeu_ps(&vectors->y[i], vectorY);
+        _mm256_store_ps(&vectors->x[i], vectorX);
+        _mm256_store_ps(&vectors->y[i], vectorY);
     }
 }
 

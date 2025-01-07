@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SIZE 1<<16
+#define SIZE 1<<20
 
 typedef struct {
     float x;

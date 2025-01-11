@@ -1,95 +1,65 @@
-#include <stdio.h>
 #include <immintrin.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
-#define SIZE 1<<20
+#include "PhysicsObjects.h"
+#include "raylib.h"
 
-typedef struct {
-    float x;
-    float y;
-} Vec2;
+#define OBJECT_COUNT (50*50)
+#define NUM_THREADS 4
+#define OBJECT_RADIUS 20
 
-typedef struct {
-    float x[SIZE];
-    float y[SIZE];
-} Vec2SOA;
+void MoveBall(PhysicsObjects *objects) {
+    Vector2 speed = {0.0f, 0.0f};
 
-void VectorizedSumOfSquares(const float *A, const float *B, float *results, int size) {
-    int i;
-    for (i = 0; i + 8 <= size; i += 8) {
-        __m256 vecA = _mm256_load_ps(&A[i]);
-        vecA = _mm256_mul_ps(vecA, vecA);
-
-        __m256 vecB = _mm256_load_ps(&B[i]);
-        vecB = _mm256_mul_ps(vecB, vecB);
-
-        __m256 result = _mm256_add_ps(vecA, vecB);
-        _mm256_store_ps(&results[i], result);
+    if (IsKeyDown(KEY_W)) {
+        speed.y += 5.0f;
+    }
+    if (IsKeyDown(KEY_S)) {
+        speed.y += -5.0f;
+    }
+    if (IsKeyDown(KEY_A)) {
+        speed.x += -5.0f;
+    }
+    if (IsKeyDown(KEY_D)) {
+        speed.x += 5.0f;
     }
 
-    for (; i < size; i++) {
-        results[i] = A[i] * A[i] + B[i] * B[i];
+    float length = sqrtf(speed.x * speed.x + speed.y * speed.y);
+    if (length != 0) {
+        speed.x /= length;
+        speed.y /= length;
     }
-}
 
-void SumOfSquares(const float *A, const float *B, float *results, int size) {
-    for (int i = 0; i < size; ++i) {
-        results[i] = A[i] * A[i] + B[i] * B[i];
-    }
-}
-
-//Array of structs version
-void VectorizedRotate(Vec2 *offsets, size_t size) {
-    size_t i;
-    for (i = 0; i + 8 <= size; i += 8) {
-        __m256 vectorX = _mm256_loadu_ps(&offsets[i].x);
-        __m256 vectorY = _mm256_loadu_ps(&offsets[i].y);
-        __m256 temp = vectorX;
-
-        __m256 mask = _mm256_set1_ps(-0.0f);
-
-        vectorX = vectorY;
-        vectorY = _mm256_xor_ps(temp, mask); //flip sign
-        _mm256_storeu_ps(&offsets[i].x, vectorX);
-        _mm256_storeu_ps(&offsets[i].y, vectorY);
-    }
-}
-
-//Struct of Array Version
-void VectorizedRotateSOA(Vec2SOA *vectors, size_t size) {
-    size_t i;
-    for (i = 0; i + 8 <= size; i += 8) {
-        __m256 vectorX = _mm256_load_ps(&vectors->x[i]);
-        __m256 vectorY = _mm256_load_ps(&vectors->y[i]);
-        __m256 temp = vectorX;
-
-        __m256 mask = _mm256_set1_ps(-0.0f);
-
-        vectorX = vectorY;
-        vectorY = _mm256_xor_ps(temp, mask);
-        _mm256_store_ps(&vectors->x[i], vectorX);
-        _mm256_store_ps(&vectors->y[i], vectorY);
-    }
+    objects->xPositions[0] += speed.x;
+    objects->yPositions[0] += speed.y;
 }
 
 int main() {
-    float A[] __attribute__((aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
-    float B[] __attribute__((aligned(32))) = {8, 9, 11, 12, 13, 14, 15, 16};
-    float result[SIZE];
+    srand(time(NULL));
+    PhysicsObjects *objects = GridSpawn(OBJECT_COUNT, 1600, 900);
+    objects->masses[0] = 100.0f;
+    objects->radii[0] = 25;
 
-    time_t start = clock();
-    VectorizedSumOfSquares(A, B, result, SIZE);
-    time_t end = clock();
-    printf("Vector Time: %lf\n", (double) (end - start) / CLOCKS_PER_SEC);
+    InitWindow(1600, 1200, "Vectorization Practice 1");
+    SetTargetFPS(1000);
 
-    SumOfSquares(A, B, result, SIZE);
+    while (!WindowShouldClose()) {
+        MoveBall(objects);
 
-    for (int i = 0; i < SIZE; ++i) {
-        printf("%f ", result[i]);
+        UpdatePhysicsObjects2(objects, GetFrameTime());
+
+        BeginDrawing();
+        ClearBackground(BLACK);
+
+        DrawCircle((int) objects->xPositions[0], 1200 - (int) objects->yPositions[0], objects->radii[0], BLUE);
+        for (int i = 1; i < objects->size; i++) {
+            DrawCircle((int) objects->xPositions[i], 1200 - (int) objects->yPositions[i], objects->radii[i],RED);
+        }
+
+        EndDrawing();
     }
-
-    Vec2 *offsets[SIZE];
 
 
     return 0;

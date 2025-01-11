@@ -1,1 +1,1 @@
-A simple physics solver/simulation programmed around SIMD(Same Instruction Multiple Data).
+A simple physics simulation built with SIMD(Same Instruction, Multiple Data) in mind. The simulation uses a SOA (struct of Arrays) approach to improve cache locality and make it easy for the compiler to vecotrize it.
